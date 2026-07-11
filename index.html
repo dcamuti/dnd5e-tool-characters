@@ -2671,8 +2671,8 @@ function generateRandom(){
 /* ---- modalità gioco ---- */
 let PLAY=false,ADV=0,DLOG=[];
 function togglePlay(){PLAY=!PLAY;buildSheet()}
-function play(){if(!C.play)C.play={hp:null,thp:0,slots:{},pact:0,hd:0,dsS:0,dsF:0,insp:false};
-  if(!C.play.slots)C.play.slots={};return C.play}
+function play(){if(!C.play)C.play={hp:null,thp:0,slots:{},pact:0,hd:0,dsS:0,dsF:0,insp:false,res:{}};
+  if(!C.play.slots)C.play.slots={};if(!C.play.res)C.play.res={};return C.play}
 function setAdv(v){ADV=v;[["advM",-1],["advN",0],["advP",1]].forEach(([id,val])=>{const el=$(id);if(el)el.classList.toggle("sel",v===val)})}
 function dlog(t){DLOG.unshift(t);DLOG=DLOG.slice(0,6);const el=$("diceLog");
   if(el)el.innerHTML=DLOG.map((x,i)=>i?`<span style="color:#8a7a5a">${x}</span>`:`<b style="color:var(--gold-l)">${x}</b>`).join(" · ")}
@@ -2692,14 +2692,142 @@ function pipSet(field,k,lvl){const p=play();
   else if(field==="slot")p.slots[lvl]=(p.slots[lvl]||0)===k+1?k:k+1;
   else if(field==="dsS")p.dsS=p.dsS===k+1?k:k+1;
   else if(field==="dsF")p.dsF=p.dsF===k+1?k:k+1;
+  else if(field==="res"){p.res=p.res||{};p.res[lvl]=(p.res[lvl]||0)===k+1?k:k+1}
   buildSheet()}
 function toggleInsp(){play().insp=!play().insp;buildSheet()}
-function shortRest(){play().pact=0;buildSheet();dlog("⏸ Riposo breve: slot del patto ripristinati (spendi Dadi Vita per curarti)")}
-function longRest(){const p=play();p.hp=null;p.thp=0;p.slots={};p.pact=0;p.dsS=0;p.dsF=0;
+function shortRest(){const p=play();p.pact=0;p.res=p.res||{};
+  classResources().forEach(r=>{if(r.reset==="breve")delete p.res[r.key]});
+  buildSheet();dlog("⏸ Riposo breve: slot del patto e risorse a ricarica breve ripristinati (spendi Dadi Vita per curarti)")}
+function longRest(){const p=play();p.hp=null;p.thp=0;p.slots={};p.pact=0;p.dsS=0;p.dsF=0;p.res={};
   p.hd=Math.max(0,p.hd-Math.max(1,Math.floor(totLevel()/2)));buildSheet();dlog("🌙 Riposo lungo: PF e slot ripristinati, recuperata metà dei Dadi Vita")}
 function pips(n,used,fnTpl,round){let s="";
   for(let k=0;k<n;k++)s+=`<span class="pip ${round?"rnd":""} ${k<used?"on":""}"${PLAY?` style="cursor:pointer;width:13px;height:13px" onclick="${fnTpl.replace(/%K/g,k)}"`:""}></span>`;
   return s}
+/* ---- risorse di classe ---- */
+function classResources(){
+  const f=finalScores(),pb=prof(totLevel());
+  const out=[];
+  entries().forEach(e=>{
+    const lv=e.lv,n=e.n,who=cN(n);
+    if(n==="Barbarian"){
+      const ire=lv<3?2:lv<6?3:lv<12?4:lv<17?5:lv<20?6:0;
+      const dmg=lv<9?2:lv<16?3:4;
+      out.push({key:"rage",name:"Ira",who,max:ire||null,reset:"lungo",type:ire?"pips":"info",
+       note:(ire?"":"Utilizzi illimitati (Campione Primordiale). ")+`Azione bonus, dura 1 minuto: +${dmg} ai danni in mischia con Forza, vantaggio a prove e TS su Forza, resistenza a danni contundenti, perforanti e taglienti.`});
+    }
+    if(n==="Bard"){
+      const die=lv<5?"d6":lv<10?"d8":lv<15?"d10":"d12";
+      out.push({key:"bard",name:`Ispirazione Bardica (${die})`,who,max:Math.max(1,mod(f.cha)),reset:lv>=5?"breve":"lungo",type:"pips",
+       note:`Azione bonus: una creatura entro 18 m ottiene un ${die} da aggiungere a una prova, un attacco o un TS entro i successivi 10 minuti.${lv>=5?" Fonte d'Ispirazione: si ricarica anche con un riposo breve.":""}${lv>=2?` Canzone di Riposo: +1${lv<9?"d6":lv<13?"d8":lv<17?"d10":"d12"} pf a chi spende Dadi Vita nel riposo breve.`:""}`});
+    }
+    if(n==="Cleric"&&lv>=2){
+      out.push({key:"cd_c",name:"Incanalare Divinità",who,max:lv<6?1:lv<18?2:3,reset:"breve",type:"pips",
+       note:`Scacciare Non Morti (TS Sag CD ${8+pb+mod(f.wis)})${lv>=5?`, distrugge i non morti di GS ≤ ${lv<8?"1/2":lv<11?"1":lv<14?"2":lv<17?"3":"4"}`:""}, oppure l'opzione del tuo dominio.`});
+      if(lv>=10)out.push({key:"di_c",name:"Intervento Divino",who,max:1,reset:"lungo",type:"pips",
+       note:`Chiedi aiuto alla divinità: riesce con un tiro percentuale ≤ ${lv<20?lv:"automatico (liv 20)"}; se riesce, non riutilizzabile per 7 giorni.`});
+    }
+    if(n==="Druid"&&lv>=2){
+      const moon=e.sub==="Circle of the Moon";
+      const crmax=moon?(lv<6?"1":""+Math.max(1,Math.floor(lv/3))):(lv<4?"1/4 (niente nuoto o volo)":lv<8?"1/2 (niente volo)":"1");
+      out.push({key:"wild",name:"Forma Selvaggia",who,max:lv>=20?null:2,reset:"breve",type:lv>=20?"info":"pips",
+       note:(lv>=20?"Utilizzi illimitati (Arcidruido). ":"")+`Bestie di GS max ${crmax}; dura ${Math.floor(lv/2)} ore.${moon?" Circolo della Luna: trasformazione come azione bonus; puoi spendere uno slot per curarti 1d8 pf per livello dello slot.":""}`});
+    }
+    if(n==="Fighter"){
+      out.push({key:"sw",name:"Recuperare Energie (Second Wind)",who,max:1,reset:"breve",type:"pips",
+       note:`Azione bonus: recuperi 1d10+${lv} punti ferita.`});
+      if(lv>=2)out.push({key:"as",name:"Azione Impetuosa (Action Surge)",who,max:lv>=17?2:1,reset:"breve",type:"pips",
+       note:"Un'azione aggiuntiva nel tuo turno (una sola volta per turno)."});
+      if(lv>=9)out.push({key:"ind",name:"Indomito",who,max:lv<13?1:lv<17?2:3,reset:"lungo",type:"pips",
+       note:"Puoi ripetere un tiro salvezza fallito."});
+      if(e.sub==="Battle Master"&&lv>=3){
+        const nd=lv<7?4:lv<15?5:6,die=lv<10?"d8":lv<18?"d10":"d12";
+        out.push({key:"supd",name:`Dadi di Superiorità (${nd}${die})`,who:scN(e.sub),max:nd,reset:"breve",type:"pips",
+         note:`Alimentano le manovre (vedi Opzioni di classe). CD manovre ${8+pb+Math.max(mod(f.str),mod(f.dex))}.`});
+      }
+      if(e.sub==="Arcane Archer"&&lv>=3)out.push({key:"arcshot",name:"Colpo Arcano",who:scN(e.sub),max:2,reset:"breve",type:"pips",
+       note:`Applichi un'opzione di Colpo Arcano a una freccia. CD ${8+pb+mod(f.int)}.`});
+    }
+    if(n==="Monk"){
+      const die=lv<5?"1d4":lv<11?"1d6":lv<17?"1d8":"1d10";
+      out.push({key:"ma",name:`Arti Marziali (${die})`,who,max:null,reset:"lungo",type:"info",
+       note:`Colpo senz'armi ${die}; colpo senz'armi come azione bonus dopo un attacco.${lv>=2?` Movimento Senz'Armatura: +${lv<6?3:lv<10?4.5:lv<14?6:lv<18?7.5:9} m senza armatura.`:""}`});
+      if(lv>=2)out.push({key:"ki",name:"Punti Ki",who,max:lv,reset:"breve",type:"pips",
+       note:`CD Ki ${8+pb+mod(f.wis)}. Raffica di Colpi (1 ki), Difesa Paziente (1), Passo del Vento (1)${lv>=5?", Colpo Stordente (1, TS Cos)":""}${lv>=18?", Corpo Vuoto (4: invisibilità e resistenze 1 min)":""}.`});
+    }
+    if(n==="Paladin"){
+      out.push({key:"loh",name:"Imposizione delle Mani",who,max:5*lv,reset:"lungo",type:"pool",
+       note:"Serbatoio di punti ferita: con un'azione curi pf a contatto; 5 punti curano una malattia o neutralizzano un veleno."});
+      out.push({key:"ds",name:"Percezione del Divino",who,max:1+Math.max(0,mod(f.cha)),reset:"lungo",type:"pips",
+       note:"Azione: entro 18 m percepisci celestiali, immondi e non morti non protetti."});
+      if(lv>=3)out.push({key:"cd_p",name:"Incanalare Divinità",who,max:1,reset:"breve",type:"pips",
+       note:"L'opzione del tuo Giuramento Sacro."});
+      if(lv>=14)out.push({key:"ct",name:"Tocco Purificatore",who,max:Math.max(1,mod(f.cha)),reset:"lungo",type:"pips",
+       note:"Azione: termini un incantesimo su di te o su una creatura consenziente a contatto."});
+    }
+    if(n==="Rogue"){
+      out.push({key:"sa",name:`Attacco Furtivo (${Math.ceil(lv/2)}d6)`,who,max:null,reset:"lungo",type:"info",
+       note:"Una volta per turno, se hai vantaggio o un alleato è entro 1,5 m dal bersaglio (arma accurata o a distanza)."});
+      if(lv>=20)out.push({key:"sol",name:"Colpo di Fortuna",who,max:1,reset:"breve",type:"pips",
+       note:"Trasformi un attacco mancato in colpito, o una prova fallita in 20 naturale."});
+    }
+    if(n==="Sorcerer"&&lv>=2){
+      out.push({key:"sorc",name:"Punti Stregoneria",who,max:lv,reset:"lungo",type:"pips",
+       note:`Metamagia (${lv<10?2:lv<17?3:4} opzioni note, vedi Opzioni di classe). Creare slot (azione bonus): 1°=2, 2°=3, 3°=5, 4°=6, 5°=7 punti; convertire uno slot frutta punti pari al suo livello.${lv>=20?" Recupero Stregonesco: +4 punti con un riposo breve.":""}`});
+    }
+    if(n==="Warlock"&&lv>=2){
+      out.push({key:"inv",name:`Suppliche Occulte (${lv<5?2:lv<7?3:lv<9?4:lv<12?5:lv<15?6:lv<18?7:8} note)`,who,max:null,reset:"lungo",type:"info",
+       note:"Vedi Opzioni di classe. Gli slot del Patto (ricarica breve) sono tracciati nella sezione Incantesimi."});
+    }
+    if(n==="Wizard"){
+      out.push({key:"arc",name:"Recupero Arcano",who,max:1,reset:"lungo",type:"pips",
+       note:`1/giorno, al termine di un riposo breve: recuperi slot per un totale di ${Math.ceil(lv/2)} livelli (nessuno di 6° o superiore).`});
+      if(lv>=18)out.push({key:"sm",name:"Padronanza degli Incantesimi",who,max:null,reset:"lungo",type:"info",
+       note:"Un incantesimo di 1° e uno di 2° dal libro lanciabili a volontà al loro livello base."});
+    }
+    if(n==="Artificer"&&lv>=2){
+      const known=lv<6?4:lv<10?6:lv<14?8:lv<18?10:12,items=lv<6?2:lv<10?3:lv<14?4:lv<18?5:6;
+      out.push({key:"inf",name:`Infusioni (${known} note, ${items} oggetti)`,who,max:null,reset:"lungo",type:"info",
+       note:"Vedi Opzioni di classe. Puoi cambiare gli oggetti infusi a ogni riposo lungo."});
+      if(lv>=7)out.push({key:"fog",name:"Lampo di Genio",who,max:Math.max(1,mod(f.int)),reset:"lungo",type:"pips",
+       note:`Reazione: +${mod(f.int)} a una prova o TS di una creatura entro 9 m.`});
+    }
+  });
+  /* risorse razziali a ricarica */
+  const race=C.race,f2=f;
+  if(race==="Dragonborn")out.push({key:"br",name:"Arma a Soffio",who:rN(race),max:1,reset:"breve",type:"pips",
+   note:`${totLevel()<6?"2d6":totLevel()<11?"3d6":totLevel()<16?"4d6":"5d6"} danni del tipo del retaggio, TS CD ${8+pb+mod(f2.con)} (Des o Cos in base al retaggio) per dimezzare.`});
+  if(race==="Half-Orc")out.push({key:"relent",name:"Tenacia Implacabile",who:rN(race),max:1,reset:"lungo",type:"pips",
+   note:"Quando scenderesti a 0 pf senza essere ucciso sul colpo, resti invece a 1 pf."});
+  if(race==="Goliath")out.push({key:"stone",name:"Resistenza della Pietra",who:rN(race),max:1,reset:"breve",type:"pips",
+   note:`Reazione quando subisci danni: riduci il danno di 1d12+${mod(f2.con)}.`});
+  if(race==="Aasimar")out.push({key:"heal",name:"Mani Guaritrici",who:rN(race),max:1,reset:"lungo",type:"pips",
+   note:`Azione: curi ${totLevel()} pf a una creatura a contatto.`});
+  if(race==="Firbolg")out.push({key:"hide",name:"Passo Nascosto",who:rN(race),max:1,reset:"breve",type:"pips",
+   note:"Azione bonus: diventi invisibile fino all'inizio del tuo prossimo turno o finché non attacchi/lanci incantesimi."});
+  if(C.sub==="Eladrin")out.push({key:"fey",name:"Passo Fatato",who:rN(C.sub),max:1,reset:"breve",type:"pips",
+   note:"Azione bonus: ti teletrasporti fino a 9 m in uno spazio libero che puoi vedere."});
+  return out;
+}
+function resMod(key,d,max){const p=play();p.res=p.res||{};p.res[key]=Math.max(0,Math.min(max,(p.res[key]||0)+d));buildSheet()}
+function classResBox(){
+  const rs=classResources();if(!rs.length)return"";
+  const P=PLAY?play():null;
+  let h=`<div class="sh-box"><h3>Risorse di classe</h3>`;
+  rs.forEach(r=>{
+    const rst=r.reset==="breve"?"riposo breve":"riposo lungo";
+    h+=`<div class="sh-trait"><b>${r.name}</b> <i>(${r.who}${r.max?" · "+rst:""})</i>`;
+    if(r.type==="pips"&&r.max){
+      const used=P?Math.min(P.res[r.key]||0,r.max):0;
+      h+=`<div style="margin:2px 0">${pips(r.max,used,`pipSet('res',%K,'${r.key}')`)}${PLAY?` <span style="font-size:.72rem;color:#6b5636"><b>${r.max-used}</b>/${r.max}</span>`:` <span style="font-size:.72rem;color:#6b5636">× ${r.max}</span>`}</div>`;
+    }else if(r.type==="pool"&&r.max){
+      const used=P?Math.min(P.res[r.key]||0,r.max):0;
+      h+=`<div style="margin:2px 0"><b style="font-size:1.05rem">${r.max-used}</b><span style="font-size:.72rem;color:#6b5636">/${r.max} punti</span>${PLAY?` <span class="pm-btn" onclick="resMod('${r.key}',5,${r.max})">-5</span><span class="pm-btn" onclick="resMod('${r.key}',1,${r.max})">-1</span><span class="pm-btn" onclick="resMod('${r.key}',-1,${r.max})">+1</span><span class="pm-btn" onclick="resMod('${r.key}',-5,${r.max})">+5</span>`:""}</div>`;
+    }
+    if(r.note)h+=`<div class="ft-desc">${r.note}</div>`;
+    h+=`</div>`;
+  });
+  h+=`</div>`;return h;
+}
 /* ---- scheda ---- */
 function rollHp(){C.hpRolls=[];
   entries().forEach((e,i)=>{const hd=clsOf(e.n).hd;
@@ -2801,7 +2929,9 @@ function buildSheet(){
     h+=`<div class="sh-line"><span class="${PLAY?"rollable":""}" ${PLAY?`onclick="doRoll('Attacco: ${wnm}',${m+pb})"`:""}>${LANG==="it"?w[1]:w[0]}${PLAY?" 🎲":""}${w[5]?` <i style="color:#999;font-size:.74rem">(${w[5]})</i>`:""}</span><b class="${PLAY?"rollable":""}" ${PLAY?`onclick="rollDmg('${wnm}','${w[2]}',${m})"`:""}>${fm(m+pb)} · ${w[2]} ${fm(m)}${PLAY?" 🎲":""}</b></div>`});
   else entries().forEach(e=>{clsOf(e.n).atk.forEach(([n,dmg,ab])=>{
     const m=mod(f[ab]);h+=`<div class="sh-line"><span>${n}</span><b>${fm(m+pb)} · ${dmg} ${fm(m)}</b></div>`})});
-  h+=`</div></div><div>`;
+  h+=`</div>`;
+  h+=classResBox();
+  h+=`</div><div>`;
   // tratti razziali e privilegi
   h+=`<div class="sh-box"><h3>Tratti razziali — ${rN(C.race)}${C.sub?" ("+rN(C.sub)+")":""} <i>[${(s&&s.src)||r.src}]</i></h3><ul class="sh-list">`;
   const trLine=t=>{const d=traitDet(t);return`<li><b>${t}</b>${d?`<div class="ft-desc">${d}</div>`:""}</li>`};
