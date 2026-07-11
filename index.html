@@ -320,7 +320,8 @@ label.fld span{display:block; font-size:.72rem; color:var(--muted); margin-botto
       <tbody id="partyBody"></tbody>
     </table></div>
     <div class="modal-foot"><span class="src-count">Suggerimento: fatti mandare i JSON dei personaggi dai giocatori e importali da 📂 Personaggi.</span>
-      <button class="btn small primary" onclick="closeParty()">Chiudi</button></div>
+      <span><button class="btn small gold" onclick="exportParty()">⬇ Esporta party per il tracker</button>
+      <button class="btn small primary" onclick="closeParty()">Chiudi</button></span></div>
   </div>
 </div>
 <div id="charModal" onclick="if(event.target===this)closeCharModal()" style="display:none;position:fixed;inset:0;background:rgba(10,7,4,.75);backdrop-filter:blur(3px);z-index:50;align-items:center;justify-content:center;padding:20px">
@@ -1818,7 +1819,8 @@ function exportChar(id){
   let name,data;
   if(id){const it=roster().find(x=>x.id===id);if(!it)return;name=it.name;data=it.data}
   else{if(!C)return;name=C.name||"personaggio";data=C}
-  const blob=new Blob([JSON.stringify(data,null,1)],{type:"application/json"});
+  const out=Object.assign({},data,{_stats:partyStats(data)});
+  const blob=new Blob([JSON.stringify(out,null,1)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
   a.download=(name||"personaggio").replace(/[^\w\- àèéìòù]/gi,"").trim().replace(/ +/g,"_")+".json";
   a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);
@@ -1959,6 +1961,15 @@ function openParty(){
   document.getElementById("partyModal").style.display="flex";
 }
 function closeParty(){document.getElementById("partyModal").style.display="none"}
+function exportParty(){
+  const list=roster();
+  if(!list.length){alert("Nessun personaggio salvato.");return}
+  const pcs=list.map(it=>{const s=partyStats(it.data);
+    return{name:s.name,race:s.race,cls:s.cls,ac:s.ac,hpM:s.hpM,hpC:s.hpC,init:parseInt(s.init,10)||0,pp:s.pp,dc:s.dc,spd:s.spd}});
+  const blob=new Blob([JSON.stringify({type:"dnd5e_party",exported:new Date().toISOString(),pcs},null,1)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="party_dnd5e.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
 /* ================= MANUALI (fonti) ================= */
 const SOURCES=[
 ["PHB","Player's Handbook",1],
@@ -2289,18 +2300,21 @@ function spellPool(lvMin,lvMax){
 const STEPS=["Razza","Classe","Caratteristiche","Background","Incantesimi","Dettagli"];
 function hideDice(){const db=$("diceBar");if(db)db.style.display="none"}
 function goHome(){$("homeView").style.display="";$("wizardView").style.display="none";$("sheetWrap").style.display="none";hideDice()}
-function startWizard(keep){if(!keep||!C)C=newChar();step=0;$("homeView").style.display="none";$("sheetWrap").style.display="none";$("wizardView").style.display="block";hideDice();renderStep()}
+function startWizard(keep){if(!keep||!C)C=newChar();step=0;_wizStep=-1;$("homeView").style.display="none";$("sheetWrap").style.display="none";$("wizardView").style.display="block";hideDice();renderStep()}
 function nav(){
   $("wizardNav").innerHTML=STEPS.map((s,i)=>`<div class="wstep ${i===step?"active":i<step?"done":""}" ${i<step?`onclick="step=${i};renderStep()"`:""}><span class="num">${i<step?"✓":i+1}</span> ${s}</div>`).join("");
 }
+let _wizStep=-1;
 function renderStep(){nav();const b=$("wizardBody");
+  const _sy=window.scrollY;
   if(step===0)b.innerHTML=stRace();
   else if(step===1)b.innerHTML=stClass();
   else if(step===2)b.innerHTML=stAbil();
   else if(step===3)b.innerHTML=stBg();
   else if(step===4)b.innerHTML=stSpells();
   else b.innerHTML=stDetails();
-  window.scrollTo(0,0);
+  if(_wizStep!==step){window.scrollTo(0,0);_wizStep=step}
+  else requestAnimationFrame(()=>window.scrollTo(0,_sy));
   autosave();
 }
 function footBtns(prevOk,nextLabel){return `<div class="wizfoot">
@@ -2879,6 +2893,7 @@ function featureList(){
   return out;
 }
 function buildSheet(){
+  const _sy=window.scrollY,_wasSheet=$("sheetWrap").style.display==="block";
   const f=finalScores(),c=clsObj(),r=raceObj(),s=subObj(),bg=bgObj(),pb=prof(totLevel());
   const skProf=new Set([...bgSkillList(),...C.skills]);
   const clsTxt=entries().map(e=>`${cN(e.n)} ${e.lv}${e.sub?" ("+scN(e.sub)+")":""}`).join(" / ");
@@ -3010,7 +3025,8 @@ function buildSheet(){
   $("homeView").style.display="none";$("wizardView").style.display="none";$("sheetWrap").style.display="block";
   const db=$("diceBar");if(db)db.style.display=PLAY?"flex":"none";
   const pbn=$("playBtn");if(pbn){pbn.textContent=PLAY?"📄 Modalità stampa":"🎲 Modalità gioco";pbn.classList.toggle("gold",PLAY)}
-  if(!PLAY)window.scrollTo(0,0);
+  if(!_wasSheet)window.scrollTo(0,0);
+  else requestAnimationFrame(()=>window.scrollTo(0,_sy));
   autosave();
 }
 applyHB();
