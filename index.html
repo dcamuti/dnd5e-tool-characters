@@ -40,6 +40,7 @@ body{color:var(--ink); font-family:Georgia,'Times New Roman',serif; min-height:1
 .btn.gold:hover{filter:brightness(1.12); color:#1a1206; box-shadow:0 4px 14px rgba(0,0,0,.5), 0 0 18px rgba(232,200,90,.35)}
 .btn:disabled{opacity:.4; cursor:not-allowed; transform:none}
 .btn.small{padding:5px 12px; font-size:.75rem}
+.sep{display:inline-block; vertical-align:middle; width:1px; height:24px; background:var(--border); margin:0 4px}
 .suite-nav{max-width:1100px; margin:14px auto -8px; padding:0 20px; display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .suite-nav .sn-lbl{font-family:var(--font-display); font-size:.68rem; letter-spacing:2px; color:var(--muted)}
 .suite-nav a{background:linear-gradient(180deg,#2c2216,#241b10); border:1px solid var(--border); border-radius:20px; padding:5px 14px; font-size:.8rem; color:var(--ink); text-decoration:none; font-family:var(--font-display); transition:all .15s}
@@ -209,11 +210,14 @@ label.fld span{display:block; font-size:.72rem; color:var(--muted); margin-botto
   <h1>⚔️ Generatore Schede D&amp;D 5E <small>Player's Handbook · Xanathar · Tasha · Volo · Mordenkainen · e altri</small></h1>
   <div>
     <button class="btn" onclick="goHome()">🏠 Home</button>
+    <span class="sep"></span>
     <button class="btn" onclick="openCharModal()">📂 Personaggi</button>
     <button class="btn" onclick="openParty()">👥 Party</button>
+    <span class="sep"></span>
+    <button class="btn" onclick="openSrcModal()">📚 Manuali <span id="srcBadge"></span></button>
     <button class="btn" onclick="openHbModal()">🛠 Homebrew</button>
     <button class="btn" onclick="toggleLang()" title="Lingua dei termini di gioco">🌐 Termini: <span id="langBadge">EN</span></button>
-    <button class="btn" onclick="openSrcModal()">📚 Manuali <span id="srcBadge"></span></button>
+    <span class="sep"></span>
     <button class="btn" onclick="startWizard()">📜 Creazione guidata</button>
     <button class="btn gold" onclick="generateRandom()">🎲 Genera un personaggio</button>
   </div>
@@ -245,12 +249,14 @@ label.fld span{display:block; font-size:.72rem; color:var(--muted); margin-botto
 
   <div id="sheetWrap">
     <div class="sheetbar">
-      <button class="btn primary" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
       <button class="btn" id="playBtn" onclick="togglePlay()">🎲 Modalità gioco</button>
-      <button class="btn gold" onclick="saveChar()">💾 Salva</button>
-      <button class="btn" onclick="exportChar()">⬇ Esporta JSON</button>
       <button class="btn" onclick="startWizard(true)">✏️ Modifica / Sali di livello</button>
       <button class="btn" onclick="generateRandom()">🎲 Rigenera casuale</button>
+      <span class="sep"></span>
+      <button class="btn gold" onclick="saveChar()">💾 Salva</button>
+      <button class="btn" onclick="exportChar()">⬇ Esporta JSON</button>
+      <span class="sep"></span>
+      <button class="btn primary" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
     </div>
     <div class="sheet" id="sheet"></div>
   </div>
