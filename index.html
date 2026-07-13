@@ -2736,6 +2736,23 @@ function pipSet(field,k,lvl){const p=play();
   buildSheet()}
 function toggleInsp(){play().insp=!play().insp;buildSheet()}
 const PC_CONDS=["Concentrazione","Prono","Afferrato","Trattenuto","Accecato","Assordato","Avvelenato","Spaventato","Affascinato","Stordito","Paralizzato","Incapacitato","Invisibile","Pietrificato","Maledetto","Benedetto"];
+const PC_COND_DESC={
+ "Concentrazione":"Se subisci danni: TS su Costituzione CD 10 o metà del danno (il più alto) per mantenere l'incantesimo.",
+ "Prono":"Svantaggio ai tuoi attacchi. Attacchi in mischia contro di te con vantaggio, a distanza con svantaggio. Rialzarsi costa metà movimento.",
+ "Afferrato":"Velocità 0. Termina se l'afferrante è incapacitato.",
+ "Trattenuto":"Velocità 0. Attacchi contro di te con vantaggio, i tuoi con svantaggio. Svantaggio ai TS su Destrezza.",
+ "Accecato":"Fallisci le prove basate sulla vista. Attacchi contro di te con vantaggio, i tuoi con svantaggio.",
+ "Assordato":"Fallisci le prove basate sull'udito.",
+ "Avvelenato":"Svantaggio ai tiri per colpire e alle prove di caratteristica.",
+ "Spaventato":"Svantaggio a prove e attacchi finché vedi la fonte della paura; non puoi avvicinarti ad essa.",
+ "Affascinato":"Non puoi attaccare chi ti ha affascinato, che ha vantaggio alle prove sociali su di te.",
+ "Stordito":"Incapacitato, non ti muovi, parli a fatica. Fallisci i TS su Forza e Destrezza. Attacchi contro di te con vantaggio.",
+ "Paralizzato":"Incapacitato, non puoi muoverti né parlare. Fallisci i TS su For/Des. Attacchi contro con vantaggio; colpi in mischia entro 1,5 m = critici.",
+ "Incapacitato":"Niente azioni né reazioni.",
+ "Invisibile":"Attacchi con vantaggio; gli attacchi contro di te hanno svantaggio.",
+ "Pietrificato":"Incapacitato, resistenza a tutti i danni, immune a veleno e malattie.",
+ "Maledetto":"Sei sotto una maledizione: annota l'effetto (rimuovibile con remove curse o simili).",
+ "Benedetto":"Effetto benefico attivo (es. bless: +1d4 a colpire e ai TS)."};
 function condToggle(c){const p=play();p.cond=p.cond||[];const i=p.cond.indexOf(c);
   if(i>=0)p.cond.splice(i,1);else p.cond.push(c);buildSheet()}
 function shortRest(){const p=play();p.pact=0;p.res=p.res||{};
@@ -2962,7 +2979,7 @@ function buildSheet(){
     <span class="pm-btn" onclick="shortRest()">⏸ Riposo breve</span>
     <span class="pm-btn" onclick="longRest()">🌙 Riposo lungo</span>
     <span style="font-size:.72rem;color:#6b5636">Clicca su TS, abilità, attacchi e caselle per tirare e tracciare. Le risorse si salvano col personaggio.</span></div>
-    <div style="margin:-4px 0 10px"><span style="font-family:var(--font-display);font-size:.62rem;letter-spacing:1.5px;color:#8b2e2e">CONDIZIONI</span> ${PC_CONDS.map(cc=>`<span class="cond-chip ${(P.cond||[]).includes(cc)?"on":""}" onclick="condToggle('${cc}')">${cc}</span>`).join("")}</div>`;
+    <div style="margin:-4px 0 10px"><span style="font-family:var(--font-display);font-size:.62rem;letter-spacing:1.5px;color:#8b2e2e">CONDIZIONI</span> ${PC_CONDS.map(cc=>`<span class="cond-chip ${(P.cond||[]).includes(cc)?"on":""}" title="${PC_COND_DESC[cc]||""}" onclick="condToggle('${cc}')">${cc}</span>`).join("")}</div>`;
   h+=`<div class="sh-combat">
    <div class="cbox"><div class="cv">${acOf(f)}</div><div class="cl">CA</div><div style="font-size:.6rem">${acNote()}</div></div>
    <div class="cbox ${PLAY?"rollable":""}" ${PLAY?`onclick="doRoll('Iniziativa',${mod(f.dex)})"`:""}><div class="cv">${fm(mod(f.dex))}</div><div class="cl">Iniziativa${PLAY?" 🎲":""}</div></div>
