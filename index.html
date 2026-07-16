@@ -217,6 +217,7 @@ label.fld span{display:block; font-size:.72rem; color:var(--muted); margin-botto
     <button class="btn" onclick="openSrcModal()">📚 Manuali <span id="srcBadge"></span></button>
     <button class="btn" onclick="openHbModal()">🛠 Homebrew</button>
     <button class="btn" onclick="toggleLang()" title="Lingua dei termini di gioco">🌐 Termini: <span id="langBadge">EN</span></button>
+    <button class="btn" onclick="openGrim()">🔮 Grimorio</button>
     <span class="sep"></span>
     <button class="btn" onclick="startWizard()">📜 Creazione guidata</button>
     <button class="btn gold" onclick="generateRandom()">🎲 Genera un personaggio</button>
@@ -344,6 +345,19 @@ label.fld span{display:block; font-size:.72rem; color:var(--muted); margin-botto
     <div class="modal-foot"><span class="src-count">Suggerimento: fatti mandare i JSON dei personaggi dai giocatori e importali da 📂 Personaggi.</span>
       <span><button class="btn small gold" onclick="exportParty()">⬇ Esporta party per il tracker</button>
       <button class="btn small primary" onclick="closeParty()">Chiudi</button></span></div>
+  </div>
+</div>
+<div id="grimModal" onclick="if(event.target===this)closeGrim()" style="display:none;position:fixed;inset:0;background:rgba(10,7,4,.75);backdrop-filter:blur(3px);z-index:50;align-items:center;justify-content:center;padding:20px">
+  <div class="modal-box" style="max-width:880px">
+    <h2>🔮 Grimorio</h2>
+    <div class="hint">Consultazione di tutti gli incantesimi delle fonti attive, indipendente dal personaggio. Clicca un incantesimo per aprirne la descrizione.</div>
+    <label class="fld"><span>Cerca</span><input type="text" id="gq" placeholder="nome…" oninput="renderGrim()"></label>
+    <label class="fld"><span>Livello</span><select id="glv" onchange="renderGrim()"><option value="">Tutti</option><option value="0">Trucchetti</option><option value="1">1°</option><option value="2">2°</option><option value="3">3°</option><option value="4">4°</option><option value="5">5°</option><option value="6">6°</option><option value="7">7°</option><option value="8">8°</option><option value="9">9°</option></select></label>
+    <label class="fld"><span>Classe</span><select id="gcl" onchange="renderGrim()"><option value="">Tutte</option><option value="b">Bardo</option><option value="c">Chierico</option><option value="d">Druido</option><option value="p">Paladino</option><option value="r">Ranger</option><option value="s">Stregone</option><option value="k">Warlock</option><option value="w">Mago</option><option value="a">Artefice</option></select></label>
+    <label class="fld"><span>Scuola</span><select id="gsc" onchange="renderGrim()"><option value="">Tutte</option><option value="A">Abiurazione</option><option value="C">Evocazione</option><option value="D">Divinazione</option><option value="E">Ammaliamento</option><option value="V">Invocazione</option><option value="I">Illusione</option><option value="N">Necromanzia</option><option value="T">Trasmutazione</option></select></label>
+    <div class="counter" id="gCount"></div>
+    <div class="spell-cols" style="grid-template-columns:1fr;max-height:52vh" id="gList"></div>
+    <div class="modal-foot"><span class="src-count">Le fonti attive si scelgono da 📚 Manuali.</span><button class="btn small primary" onclick="closeGrim()">Chiudi</button></div>
   </div>
 </div>
 <div id="charModal" onclick="if(event.target===this)closeCharModal()" style="display:none;position:fixed;inset:0;background:rgba(10,7,4,.75);backdrop-filter:blur(3px);z-index:50;align-items:center;justify-content:center;padding:20px">
@@ -3098,6 +3112,30 @@ function buildSheet(){
   if(!_wasSheet)window.scrollTo(0,0);
   else requestAnimationFrame(()=>window.scrollTo(0,_sy));
   autosave();
+}
+/* ---- grimorio ---- */
+let GOPEN=new Set();
+const GR_CL=[["b","Bardo"],["c","Chierico"],["d","Druido"],["p","Paladino"],["r","Ranger"],["s","Stregone"],["k","Warlock"],["w","Mago"],["a","Artefice"]];
+const grCls=codes=>GR_CL.filter(([c])=>codes.includes(c)).map(([,n])=>n).join(", ");
+function openGrim(){renderGrim();$("grimModal").style.display="flex"}
+function closeGrim(){$("grimModal").style.display="none"}
+function grimToggle(n){GOPEN.has(n)?GOPEN.delete(n):GOPEN.add(n);renderGrim()}
+function renderGrim(){
+  const q=($("gq").value||"").toLowerCase(),lv=$("glv").value,cl=$("gcl").value,sc=$("gsc").value;
+  let l=SPELLS.filter(s=>okSrc(s[4]||"PHB")
+    &&(lv===""||s[1]===+lv)
+    &&(!cl||s[3].includes(cl))
+    &&(!sc||s[2]===sc)
+    &&(!q||s[0].toLowerCase().includes(q)||spN(s[0]).toLowerCase().includes(q)));
+  l.sort((a,b)=>a[1]-b[1]||spN(a[0]).localeCompare(spN(b[0])));
+  const over=l.length>80;const tot=l.length;if(over)l=l.slice(0,80);
+  $("gCount").textContent=`${tot} incantesimi${over?" (mostrati i primi 80: affina i filtri)":""}`;
+  $("gList").innerHTML=l.map(s=>{const det=SPELL_DET[s[0]];const open=GOPEN.has(s[0]);
+   return`<div class="spell-item ${open?"sel":""}" onclick="grimToggle('${s[0].replace(/'/g,"\\'")}')">
+    <b>${spN(s[0])}</b>${LANG==="it"&&det&&det[0]?` <span style="color:#8a7a5a;font-size:.72rem">(${s[0]})</span>`:""}
+    <div class="sinfo">${s[1]===0?"Trucchetto":s[1]+"° livello"} · ${SCHOOL_IT[s[2]]} · ${grCls(s[3])}${s[4]?" · "+s[4]:""}</div>
+    ${open&&det?`<div class="sdesc">${det[1]}</div>`:""}
+   </div>`}).join("")||'<p style="color:var(--muted)">Nessun incantesimo trovato con questi filtri.</p>';
 }
 const SUITE_KEYS=["dnd5e_chars","dnd5e_draft","dnd5e_lang","dnd5e_npcs","enc_src","enc_saved","enc_trk","enc_hb","dnd5e_diary"];
 function backupSuite(){
