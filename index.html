@@ -229,6 +229,7 @@ label.fld span{display:block; font-size:.72rem; color:var(--muted); margin-botto
   <a href="https://dcamuti.github.io/dnd5e-tool-npcs/">🎭 NPC</a>
   <a href="https://dcamuti.github.io/dnd5e-tool-encounters/">🐉 Incontri</a>
   <a href="https://dcamuti.github.io/dnd5e-tool-journal/">📖 Diario</a>
+  <a href="https://dcamuti.github.io/dnd5e-tool-puzzles/">🔐 Enigmi</a>
 </nav>
 <main>
   <div id="homeView">
@@ -3137,7 +3138,7 @@ function renderGrim(){
     ${open&&det?`<div class="sdesc">${det[1]}</div>`:""}
    </div>`}).join("")||'<p style="color:var(--muted)">Nessun incantesimo trovato con questi filtri.</p>';
 }
-const SUITE_KEYS=["dnd5e_chars","dnd5e_draft","dnd5e_lang","dnd5e_npcs","enc_src","enc_saved","enc_trk","enc_hb","dnd5e_diary"];
+const SUITE_KEYS=["dnd5e_chars","dnd5e_draft","dnd5e_lang","dnd5e_npcs","enc_src","enc_saved","enc_trk","enc_hb","dnd5e_diary","dnd5e_puzzles"];
 function backupSuite(){
   const data={type:"dnd5e_suite_backup",date:new Date().toISOString(),store:{}};
   let n=0;SUITE_KEYS.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null){data.store[k]=v;n++}}catch(e){}});
