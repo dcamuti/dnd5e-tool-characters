@@ -299,6 +299,49 @@ label.fld span{display:block; font-size:.72rem; color:var(--muted); margin-botto
       <label class="fld" style="width:100%"><span>Tratti (uno per riga)</span><textarea id="hbrTraits" placeholder="Es. Visione Ancestrale — vantaggio alle prove di Storia sugli antenati"></textarea></label>
       <button class="btn small gold" onclick="hbAddRace()">Aggiungi razza</button>
     </details>
+    <details><summary>➕ Nuova arma</summary>
+      <label class="fld"><span>Nome (unico)</span><input type="text" id="hbwName" placeholder="Es. Falce Runica"></label>
+      <label class="fld"><span>Nome IT (opz.)</span><input type="text" id="hbwIt"></label>
+      <label class="fld"><span>Dado di danno</span><select id="hbwDie"><option>1d4</option><option>1d6</option><option selected>1d8</option><option>1d10</option><option>1d12</option><option>2d4</option><option>2d6</option><option>2d8</option></select></label>
+      <label class="fld"><span>Tipo di danno</span><select id="hbwType"><option value="cont.">Contundenti</option><option value="perf.">Perforanti</option><option value="tagl." selected>Taglienti</option><option value="fuoco">Fuoco</option><option value="freddo">Freddo</option><option value="fulmine">Fulmine</option><option value="necr.">Necrotici</option><option value="rad.">Radiosi</option><option value="psich.">Psichici</option><option value="forza">Forza</option></select></label>
+      <label class="fld"><span>Uso</span><select id="hbwRng" onchange="hbwUI()"><option value="m">Mischia</option><option value="r">A distanza</option></select></label>
+      <label class="fld"><span>Categoria</span><select id="hbwCat"><option value="semplice">Semplice</option><option value="da guerra" selected>Da guerra</option></select></label>
+      <label class="fld" id="hbwRow"><span>Gittata / lancio (opz.)</span><input type="text" id="hbwRange" placeholder="Es. 6/18" style="width:110px"></label>
+      <label class="fld"><span>Danno bonus (opz.)</span><input type="text" id="hbwBonus" placeholder="Es. +1d6 fuoco" style="width:130px"></label>
+      <div style="margin:4px 0"><span style="font-size:.75rem;color:var(--muted)">Proprietà:</span>
+        <label style="font-size:.78rem;margin:0 8px"><input type="checkbox" id="hbwFin"> accurata</label>
+        <label style="font-size:.78rem;margin-right:8px"><input type="checkbox" id="hbwLight"> leggera</label>
+        <label style="font-size:.78rem;margin-right:8px"><input type="checkbox" id="hbwHeavy"> pesante</label>
+        <label style="font-size:.78rem;margin-right:8px"><input type="checkbox" id="hbwTwo"> due mani</label>
+        <label style="font-size:.78rem;margin-right:8px"><input type="checkbox" id="hbwReach"> portata</label>
+        <label style="font-size:.78rem;margin-right:8px"><input type="checkbox" id="hbwLoad"> ricarica</label>
+        <label style="font-size:.78rem;margin-right:8px"><input type="checkbox" id="hbwVers"> versatile <select id="hbwVersDie" style="padding:2px 4px"><option>1d8</option><option>1d10</option><option>1d12</option></select></label>
+      </div>
+      <label class="fld" style="width:100%"><span>Note aggiuntive (opz.)</span><input type="text" style="width:100%" id="hbwNote" placeholder="Es. magica +1; chi viene colpito deve superare un TS su Costituzione CD 13"></label>
+      <div class="hint" style="margin:2px 0 8px">L'arma entra nell'elenco equipaggiabile del passo <b>Dettagli</b> e negli attacchi della scheda, con bonus e danni calcolati come per le armi ufficiali (Destrezza se accurata o a distanza).</div>
+      <button class="btn small gold" onclick="hbAddWeapon()">Aggiungi arma</button>
+    </details>
+    <details><summary>➕ Nuova armatura</summary>
+      <label class="fld"><span>Nome (unico)</span><input type="text" id="hbaName" placeholder="Es. Corazza di Scaglie di Drago"></label>
+      <label class="fld"><span>Nome IT (opz.)</span><input type="text" id="hbaIt"></label>
+      <label class="fld"><span>Categoria</span><select id="hbaCat" onchange="hbaUI()">
+        <option value="light">Leggera (CA + Des piena)</option>
+        <option value="med" selected>Media (CA + Des limitata)</option>
+        <option value="heavy">Pesante (CA fissa)</option></select></label>
+      <label class="fld"><span>CA base</span><input type="number" id="hbaAc" value="14" style="width:70px"></label>
+      <label class="fld" id="hbaMaxRow"><span>Max bonus Des</span><input type="number" id="hbaMax" value="2" style="width:70px"></label>
+      <label class="fld"><span>Forza richiesta (0 = nessuna)</span><input type="number" id="hbaStr" value="0" style="width:70px"></label>
+      <label class="fld" style="align-self:center"><span>&nbsp;</span><label style="font-size:.8rem"><input type="checkbox" id="hbaStealth"> svantaggio a Furtività</label></label>
+      <label class="fld" style="width:100%"><span>Note (opz.)</span><input type="text" style="width:100%" id="hbaNote" placeholder="Es. resistenza ai danni da fuoco; magica +1"></label>
+      <button class="btn small gold" onclick="hbAddArmor()">Aggiungi armatura</button>
+    </details>
+    <details><summary>➕ Nuovo scudo</summary>
+      <label class="fld"><span>Nome (unico)</span><input type="text" id="hbshName" placeholder="Es. Egida del Guardiano"></label>
+      <label class="fld"><span>Nome IT (opz.)</span><input type="text" id="hbshIt"></label>
+      <label class="fld"><span>Bonus CA</span><input type="number" id="hbshBonus" value="2" style="width:70px"></label>
+      <label class="fld" style="width:100%"><span>Note (opz.)</span><input type="text" style="width:100%" id="hbshNote" placeholder="Es. +1 ai TS contro incantesimi; una volta al giorno impone svantaggio a un attacco"></label>
+      <button class="btn small gold" onclick="hbAddShield()">Aggiungi scudo</button>
+    </details>
     <details><summary>➕ Nuovo incantesimo</summary>
       <label class="fld"><span>Nome (EN o unico)</span><input type="text" id="hbsName"></label>
       <label class="fld"><span>Nome IT (opz.)</span><input type="text" id="hbsIt"></label>
@@ -1890,7 +1933,12 @@ function renderCharModal(){
 }
 function resumeDraft(){if(!C)return;if(C.race&&C.cls)buildSheet();else startWizard(true)}
 /* ---- homebrew ---- */
-let HB=lsGet("dnd5e_homebrew",{races:[],spells:[],feats:[],bgs:[]});
+let HB=lsGet("dnd5e_homebrew",{races:[],spells:[],feats:[],bgs:[],weapons:[],armors:[],shields:[]});
+["races","spells","feats","bgs","weapons","armors","shields"].forEach(k=>{if(!Array.isArray(HB[k]))HB[k]=[]});
+/* scudi: [nome, nome IT, bonus CA, note, fonte] */
+const SHIELDS=[["Shield","Scudo",2,"",""]];
+function shieldOf(v){if(!v)return null;return SHIELDS.find(s=>s[0]===v)||(v===true?SHIELDS[0]:null)}
+function shieldBonus(){const s=shieldOf(gear().shield);return s?s[2]:0}
 function applyHB(){
   for(let i=RACES.length-1;i>=0;i--)if(RACES[i].hb)RACES.splice(i,1);
   for(let i=SPELLS.length-1;i>=0;i--)if(SPELLS[i][4]==="HB")SPELLS.splice(i,1);
@@ -1900,6 +1948,12 @@ function applyHB(){
   (HB.spells||[]).forEach(s=>{SPELLS.push([s.n,s.lv,s.school||"V",s.classes||"w","HB"]);SPELL_DET[s.n]=[s.it||"",s.det||""]});
   (HB.feats||[]).forEach(ft=>{FEATS.push([ft.n,ft.it||ft.n,"HB",ft.desc||""]);if(ft.asi&&ft.asi.length)FEAT_ASI[ft.n]=ft.asi});
   (HB.bgs||[]).forEach(b=>BACKGROUNDS.push({n:b.n,src:"HB",sk:b.sk||[],x:b.x||""}));
+  for(let i=WEAPONS.length-1;i>=0;i--)if(WEAPONS[i][6]==="HB")WEAPONS.splice(i,1);
+  (HB.weapons||[]).forEach(w=>WEAPONS.push([w.n,w.it||w.n,w.dmg,w.rng?"r":"m",w.fin?1:0,w.props||"","HB"]));
+  for(let i=ARMORS.length-1;i>=0;i--)if(ARMORS[i][7]==="HB")ARMORS.splice(i,1);
+  (HB.armors||[]).forEach(a=>ARMORS.push([a.n,a.it||a.n,a.cat,+a.ac,a.cat==="med"?(+a.maxDex||2):99,+a.str||0,a.stealth?1:0,"HB",a.note||""]));
+  for(let i=SHIELDS.length-1;i>=1;i--)if(SHIELDS[i][4]==="HB")SHIELDS.splice(i,1);
+  (HB.shields||[]).forEach(s=>SHIELDS.push([s.n,s.it||s.n,+s.bonus||2,s.note||"","HB"]));
 }
 function hbSave(){lsSet("dnd5e_homebrew",HB);applyHB();renderHbList();srcBadge()}
 function openHbModal(){
@@ -1937,6 +1991,72 @@ function hbAddFeat(){
   HB.feats.push({n,it:document.getElementById("hbfIt").value.trim(),desc:document.getElementById("hbfDesc").value.trim(),asi});
   document.getElementById("hbfName").value="";hbSave();
 }
+function hbwUI(){
+  const r=document.getElementById("hbwRng").value==="r";
+  const row=document.getElementById("hbwRow");
+  if(row)row.querySelector("span").textContent=r?"Gittata (obbligatoria)":"Lancio (opz.)";
+}
+function hbAddWeapon(){
+  const g=id=>document.getElementById(id);
+  const n=g("hbwName").value.trim();
+  if(!n)return alert("Inserisci il nome dell'arma.");
+  if(WEAPONS.some(w=>w[0]===n||w[1]===n))return alert("Esiste già un'arma con questo nome.");
+  const rng=g("hbwRng").value==="r";
+  const range=g("hbwRange").value.trim();
+  if(rng&&!range)return alert("Per un'arma a distanza indica la gittata (es. 24/96).");
+  const props=[];
+  if(g("hbwFin").checked)props.push("accurata");
+  if(g("hbwLight").checked)props.push("leggera");
+  if(g("hbwHeavy").checked)props.push("pesante");
+  if(g("hbwTwo").checked)props.push("due mani");
+  if(g("hbwReach").checked)props.push("portata");
+  if(g("hbwLoad").checked)props.push("ricarica");
+  if(g("hbwVers").checked)props.push("versatile "+g("hbwVersDie").value);
+  if(range)props.push((rng?"gittata ":"lancio ")+range);
+  props.push(g("hbwCat").value);
+  const bonus=g("hbwBonus").value.trim();
+  if(bonus)props.push(bonus.replace(/^\+?/,"+"));
+  const note=g("hbwNote").value.trim();
+  if(note)props.push(note);
+  HB.weapons.push({n,it:g("hbwIt").value.trim()||n,
+    dmg:g("hbwDie").value+" "+g("hbwType").value,
+    rng,fin:g("hbwFin").checked||rng,props:props.join(", ")});
+  ["hbwName","hbwIt","hbwRange","hbwBonus","hbwNote"].forEach(id=>g(id).value="");
+  ["hbwFin","hbwLight","hbwHeavy","hbwTwo","hbwReach","hbwLoad","hbwVers"].forEach(id=>g(id).checked=false);
+  hbSave();
+  alert("⚔ Arma aggiunta: la trovi tra le armi equipaggiabili nel passo «Dettagli».");
+}
+function hbaUI(){
+  const row=document.getElementById("hbaMaxRow");
+  if(row)row.style.display=document.getElementById("hbaCat").value==="med"?"":"none";
+}
+function hbAddArmor(){
+  const g=id=>document.getElementById(id);
+  const n=g("hbaName").value.trim();
+  if(!n)return alert("Inserisci il nome dell'armatura.");
+  if(ARMORS.some(a=>a[0]===n||a[1]===n))return alert("Esiste già un'armatura con questo nome.");
+  const ac=parseInt(g("hbaAc").value,10);
+  if(isNaN(ac)||ac<8||ac>20)return alert("La CA base deve essere un numero tra 8 e 20.");
+  HB.armors.push({n,it:g("hbaIt").value.trim()||n,cat:g("hbaCat").value,ac,
+    maxDex:parseInt(g("hbaMax").value,10)||2,str:parseInt(g("hbaStr").value,10)||0,
+    stealth:g("hbaStealth").checked,note:g("hbaNote").value.trim()});
+  ["hbaName","hbaIt","hbaNote"].forEach(id=>g(id).value="");
+  g("hbaStealth").checked=false;
+  hbSave();
+  alert("🛡 Armatura aggiunta: la trovi nell'elenco del passo «Dettagli».");
+}
+function hbAddShield(){
+  const g=id=>document.getElementById(id);
+  const n=g("hbshName").value.trim();
+  if(!n)return alert("Inserisci il nome dello scudo.");
+  if(SHIELDS.some(s=>s[0]===n||s[1]===n))return alert("Esiste già uno scudo con questo nome.");
+  const b=parseInt(g("hbshBonus").value,10);
+  if(isNaN(b)||b<0||b>6)return alert("Il bonus alla CA deve essere un numero tra 0 e 6.");
+  HB.shields.push({n,it:g("hbshIt").value.trim()||n,bonus:b,note:g("hbshNote").value.trim()});
+  ["hbshName","hbshIt","hbshNote"].forEach(id=>g(id).value="");
+  hbSave();
+  alert("🛡 Scudo aggiunto: lo trovi nel selettore del passo «Dettagli».");
+}
 function hbAddBg(){
   const n=document.getElementById("hbbName").value.trim();if(!n)return alert("Inserisci il nome del background.");
   if(BACKGROUNDS.some(b=>b.n===n))return alert("Esiste già un background con questo nome.");
@@ -1952,6 +2072,9 @@ function renderHbList(){
   const el=document.getElementById("hbList");if(!el)return;
   const row=(label,type,items,info)=>items.length?`<div style="margin-bottom:6px"><b style="color:var(--gold);font-size:.8rem">${label}:</b> ${items.map(x=>`<span class="tag" title="${(info(x)||"").replace(/"/g,"&quot;")}">${x.n} <a style="cursor:pointer;color:#e07a7a" onclick="hbDel('${type}','${x.n.replace(/'/g,"\\'")}')">✕</a></span>`).join(" ")}</div>`:"";
   el.innerHTML=(row("Razze","races",HB.races,x=>(x.traits||[]).join("; "))+
+    row("Armi","weapons",HB.weapons,x=>x.dmg+(x.props?" · "+x.props:""))+
+    row("Armature","armors",HB.armors,x=>"CA "+x.ac+" ("+x.cat+")"+(x.note?" · "+x.note:""))+
+    row("Scudi","shields",HB.shields,x=>"+"+x.bonus+" CA"+(x.note?" · "+x.note:""))+
     row("Incantesimi","spells",HB.spells,x=>x.det)+
     row("Talenti","feats",HB.feats,x=>x.desc)+
     row("Background","bgs",HB.bgs,x=>x.x))||`<div class="hint">Nessun contenuto homebrew ancora creato.</div>`;
@@ -1965,7 +2088,7 @@ function hbImport(inp){const fl=inp.files&&inp.files[0];if(!fl)return;
   const rd=new FileReader();
   rd.onload=()=>{try{const d=JSON.parse(rd.result);
       if(typeof d!=="object")throw 0;
-      ["races","spells","feats","bgs"].forEach(k=>{(d[k]||[]).forEach(item=>{
+      ["races","spells","feats","bgs","weapons","armors","shields"].forEach(k=>{if(!Array.isArray(HB[k]))HB[k]=[];(d[k]||[]).forEach(item=>{
         if(item&&item.n&&!HB[k].some(x=>x.n===item.n))HB[k].push(item)})});
       hbSave();
     }catch(e){alert("File homebrew non valido.")}};
@@ -2072,6 +2195,12 @@ function sanitizeChar(){
   else if(C.subclass&&c){const sc=c.sub.find(x=>x[0]===C.subclass);if(!sc||!okSrc(sc[1]))C.subclass=null}
   const bg=bgObj();
   if(C.bg&&(!bg||!okSrc(bg.src))){C.bg=null;C.bgPick=[]}
+  if(C.gear&&Array.isArray(C.gear.weapons))
+    C.gear.weapons=C.gear.weapons.filter(wn=>{const w=WEAPONS.find(x=>x[0]===wn);return w&&(w[6]!=="HB"||ENABLED.has("HB"))});
+  if(C.gear&&C.gear.armor){const a=ARMORS.find(x=>x[0]===C.gear.armor);
+    if(!a||(a[7]==="HB"&&!ENABLED.has("HB")))C.gear.armor="None"}
+  if(C.gear&&C.gear.shield){const s=shieldOf(C.gear.shield);
+    if(!s||(s[4]==="HB"&&!ENABLED.has("HB")))C.gear.shield=false}
   (C.multi||[]).forEach((m,i)=>{
     if(m.n){const mc=clsOf(m.n);
       if(!mc||!okSrc(mc.src)){C.multi.splice(i,1);C.asi=[];return}
@@ -2646,12 +2775,12 @@ function stDetails(){
   </div>
   <h3 style="color:var(--gold-l)">Equipaggiamento</h3>
   <div class="flexrow" style="margin-top:8px">
-  <label class="fld"><span>Armatura</span><select onchange="gear().armor=this.value;renderStep()">${ARMORS.map(a=>`<option value="${a[0]}" ${gear().armor===a[0]?"selected":""}>${LANG==="it"?a[1]:a[0]} — CA ${a[3]}${a[2]==="light"||a[2]==="none"?"+Des":a[2]==="med"?"+Des (max 2)":""}${a[6]?" · svant. Furtività":""}${a[5]?" · For "+a[5]:""}</option>`).join("")}</select></label>
-  <label class="fld"><span>Scudo (+2 CA)</span><select onchange="gear().shield=this.value==='1';renderStep()"><option value="0" ${!gear().shield?"selected":""}>No</option><option value="1" ${gear().shield?"selected":""}>Sì</option></select></label>
+  <label class="fld"><span>Armatura</span><select onchange="gear().armor=this.value;renderStep()">${ARMORS.filter(a=>a[7]!=="HB"||ENABLED.has("HB")).map(a=>`<option value="${a[0]}" ${gear().armor===a[0]?"selected":""}>${LANG==="it"?a[1]:a[0]}${a[7]==="HB"?" ✦":""} — CA ${a[3]}${a[2]==="light"||a[2]==="none"?"+Des":a[2]==="med"?"+Des (max "+a[4]+")":""}${a[6]?" · svant. Furtività":""}${a[5]?" · For "+a[5]:""}</option>`).join("")}</select></label>
+  <label class="fld"><span>Scudo</span><select onchange="gear().shield=this.value||false;renderStep()"><option value="" ${!gear().shield?"selected":""}>Nessuno</option>${SHIELDS.filter(s=>s[4]!=="HB"||ENABLED.has("HB")).map(s=>`<option value="${s[0]}" ${(gear().shield===s[0]||(gear().shield===true&&s[0]==="Shield"))?"selected":""}>${LANG==="it"?s[1]:s[0]}${s[4]==="HB"?" ✦":""} (+${s[2]} CA)</option>`).join("")}</select></label>
   <div style="align-self:center;font-size:.9rem;color:var(--gold-l)">CA risultante: <b style="font-size:1.2rem">${acOf(finalScores())}</b></div>
   </div>
   <div class="hint" style="margin-bottom:2px">Armi equipaggiate (max 4) — passa il mouse per danno e proprietà:</div>
-  <div class="chipbar">${WEAPONS.map(w=>`<span class="chip ${gear().weapons.includes(w[0])?"sel":""}" title="${w[2]} · ${w[5]||""}" onclick="toggleWeapon('${w[0].replace(/'/g,"\\'")}')">${LANG==="it"?w[1]:w[0]}</span>`).join("")}</div>
+  <div class="chipbar">${WEAPONS.filter(w=>w[6]!=="HB"||ENABLED.has("HB")).map(w=>`<span class="chip ${gear().weapons.includes(w[0])?"sel":""}" title="${w[2]} · ${(w[5]||"").replace(/"/g,"&quot;")}" onclick="toggleWeapon('${w[0].replace(/'/g,"\\'")}')">${LANG==="it"?w[1]:w[0]}${w[6]==="HB"?" ✦":""}</span>`).join("")}</div>
   <label class="fld" style="width:100%"><span>Inventario / altro equipaggiamento</span><input type="text" style="width:100%" value="${(gear().inv||"").replace(/"/g,"&quot;")}" oninput="gear().inv=this.value" placeholder="Es. zaino da esploratore, corda, 15 mo…"></label>
   <button class="btn small gold" onclick="C.trait=rnd(TRAIT_POOL);C.ideal=rnd(IDEAL_POOL);C.bond=rnd(BOND_POOL);C.flaw=rnd(FLAW_POOL);renderStep()">🎲 Tratti casuali</button>
   <div class="flexrow" style="margin-top:10px">
@@ -2954,10 +3083,13 @@ function acOf(f){const g=gear(),a=armorObj(),dx=mod(f.dex);let ac;
   }else if(a[2]==="light")ac=a[3]+dx;
   else if(a[2]==="med")ac=a[3]+Math.min(dx,a[4]);
   else ac=a[3];
-  if(g.shield)ac+=2;
+  ac+=shieldBonus();
   return ac}
 function acNote(){const g=gear(),a=armorObj(),f=finalScores();
-  let n=(LANG==="it"?a[1]:a[0])+(g.shield?" + scudo":"");
+  const sh=shieldOf(g.shield);
+  let n=(LANG==="it"?a[1]:a[0])+(sh?" + "+(LANG==="it"?sh[1]:sh[0])+(sh[2]!==2?" (+"+sh[2]+")":""):"");
+  if(a[7]==="HB"&&a[8])n+=" · "+a[8];
+  if(sh&&sh[4]==="HB"&&sh[3])n+=" · "+sh[3];
   if(a[2]==="none"&&(C.cls==="Sorcerer"||C.cls==="Wizard"))n+=" (13+Des con Armatura Magica)";
   if(a[5]>0&&f.str<a[5])n+=` ⚠ For ${a[5]} richiesta (-3 m velocità)`;
   return n}
@@ -3051,7 +3183,7 @@ function buildSheet(){
     h+=`</div>`}
   h+=`<div class="sh-box"><h3>Privilegi di classe</h3><ul class="sh-list">${featureList().map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
   h+=`<div class="sh-box"><h3>Competenze ed equipaggiamento</h3><div class="sh-trait"><b>Competenza armature:</b> ${c.armor}</div><div class="sh-trait"><b>Competenza armi:</b> ${c.weapons}</div>${bg?`<div class="sh-trait"><b>Background (${bg.src}):</b> ${bg.x}</div>`:""}
-  <div class="sh-trait"><b>Armatura indossata:</b> ${LANG==="it"?armorObj()[1]:armorObj()[0]}${gear().shield?" + scudo":""}</div>
+  <div class="sh-trait"><b>Armatura indossata:</b> ${LANG==="it"?armorObj()[1]:armorObj()[0]}${shieldOf(gear().shield)?" + "+(LANG==="it"?shieldOf(gear().shield)[1]:shieldOf(gear().shield)[0]):""}</div>
   <div class="sh-trait"><b>Armi:</b> ${gear().weapons.map(wn=>{const w=WEAPONS.find(x=>x[0]===wn);return w?(LANG==="it"?w[1]:w[0]):wn}).join(", ")||"—"}</div>
   ${gear().inv?`<div class="sh-trait"><b>Inventario:</b> ${gear().inv}</div>`:""}
   <div class="sh-trait"><b>Dotazione di classe suggerita:</b> ${eqN(c.equip)}</div>${isMulti()?`<div class="sh-trait"><b>Multiclasse:</b> TS e abilità dalla classe primaria (${cN(C.cls)}); dalla classe aggiuntiva si ottengono solo le competenze previste dal PHB (cap. 6, "Multiclassing").</div>`:""}</div>`;
