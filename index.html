@@ -1882,21 +1882,49 @@ const tN=(en,dict)=>LANG==="it"&&dict[en]?dict[en]:en;
 const rN=en=>tN(en,IT_RACE), cN=en=>tN(en,IT_CLASS), scN=en=>tN(en,IT_SUBCL), bgN=en=>tN(en,IT_BG), skN=en=>tN(en,IT_SKILL);
 const spN=en=>{const d=SPELL_DET[en];return LANG==="it"&&d&&d[0]?d[0]:en};
 /* ================= SALVATAGGIO ================= */
+const htmlEsc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+/* ================= DATI ESTERNI (file importati, link condivisi, backup) =================
+   Tutto ciò che arriva da fuori viene ripulito prima di entrare nella suite:
+   niente markup, virgolette o entità che possano "uscire" dagli attributi HTML;
+   gli id vengono ridotti a caratteri sicuri. Solo i campi player/dm degli enigmi
+   possono contenere HTML, che passa da un filtro a lista bianca. */
+const PZ_ALLOW=false;
+const PZ_HTML_KEYS=["player","dm"];
+function cleanHtml(html){
+  try{const doc=new DOMParser().parseFromString("<body>"+(html||"")+"</body>","text/html");
+    doc.body.querySelectorAll("script,iframe,object,embed,link,meta,base,form,frame,frameset,noscript,template,style").forEach(n=>n.remove());
+    doc.body.querySelectorAll("*").forEach(el=>[...el.attributes].forEach(a=>{
+      const n=a.name.toLowerCase(),v=(a.value||"").replace(/[\s\u0000-\u001f]/g,"").toLowerCase();
+      const urlAttr=["href","src","xlink:href","action","formaction","background","poster"].includes(n);
+      if(n.startsWith("on")||n==="srcdoc"||(urlAttr&&(v.startsWith("javascript:")||v.startsWith("vbscript:")||(v.startsWith("data:")&&!v.startsWith("data:image/")))))el.removeAttribute(a.name)}));
+    return doc.body.innerHTML}catch(e){return String(html||"").replace(/[<>]/g,"")}}
+function cleanStr(v){return v.replace(/[<>]/g,"").replace(/"/g,"”").replace(/&(?=[#A-Za-z0-9])/g,"＆")}
+function safeParse(txt,allowPzHtml){
+  return JSON.parse(txt,(k,v)=>{
+    if(typeof v!=="string")return v;
+    if(allowPzHtml&&PZ_HTML_KEYS.includes(k))return cleanHtml(v);
+    if(k==="id")return v.replace(/[^\w-]/g,"");
+    return cleanStr(v)})}
+/* valore di una chiave del backup: è JSON (tranne la lingua, che è testo semplice) */
+function safeStoreVal(k,v){try{return JSON.stringify(safeParse(v,k==="dnd5e_puzzles"))}catch(e){return String(v).replace(/[^\w-]/g,"")}}
 function roster(){return lsGet("dnd5e_chars",[])}
 function autosave(){if(C&&(C.race||C.cls))lsSet("dnd5e_draft",C)}
 function saveChar(){
   if(!C||!C.race||!C.cls){alert("Crea prima un personaggio (almeno razza e classe).");return}
   if(!C.id)C.id=Date.now()+"_"+Math.floor(Math.random()*1e4);
   const list=roster().filter(x=>x.id!==C.id);
-  list.unshift({id:C.id,name:C.name||"Senza nome",info:`${rN(C.race)} · ${entries().map(e=>cN(e.n)+" "+e.lv).join(" / ")}`,ts:Date.now(),data:C});
+  const prevE=roster().find(x=>x.id===C.id);
+  list.unshift({id:C.id,name:C.name||"Senza nome",info:`${rN(C.race)} · ${entries().map(e=>cN(e.n)+" "+e.lv).join(" / ")}`,ts:Date.now(),
+    syncTs:Math.max(C._syncTs||0,(prevE&&prevE.syncTs)||0),data:C,st:partyStats(C)});
+  if(LVUP&&LVUP.id===C.id&&totLevel()>LVUP.from)LVUP=null;
   lsSet("dnd5e_chars",list.slice(0,60));
   const cm=document.getElementById("charModal");
   if(cm&&cm.style.display==="flex")renderCharModal();else alert("💾 Personaggio salvato: "+(C.name||"Senza nome"));
 }
 function loadChar(id){const it=roster().find(x=>x.id===id);if(!it)return;
-  C=JSON.parse(JSON.stringify(it.data));sanitizeChar();closeCharModal();
+  C=JSON.parse(JSON.stringify(it.data));C._syncTs=it.syncTs||0;sanitizeChar();closeCharModal();
   if(C.race&&C.cls)buildSheet();else startWizard(true)}
 function delChar(id){lsSet("dnd5e_chars",roster().filter(x=>x.id!==id));renderCharModal()}
 function exportChar(id){
@@ -1911,7 +1939,7 @@ function exportChar(id){
 }
 function importChar(inp){const f=inp.files&&inp.files[0];if(!f)return;
   const rd=new FileReader();
-  rd.onload=()=>{try{const d=JSON.parse(rd.result);
+  rd.onload=()=>{try{const d=safeParse(rd.result,PZ_ALLOW);
       if(typeof d!=="object"||(!d.cls&&!d.race))throw new Error("shape");
       d.id=Date.now()+"_imp";C=d;sanitizeChar();saveChar();
       if(C.race&&C.cls){closeCharModal();buildSheet()}else{closeCharModal();startWizard(true)}
@@ -2086,7 +2114,7 @@ function hbExport(){
 }
 function hbImport(inp){const fl=inp.files&&inp.files[0];if(!fl)return;
   const rd=new FileReader();
-  rd.onload=()=>{try{const d=JSON.parse(rd.result);
+  rd.onload=()=>{try{const d=safeParse(rd.result,PZ_ALLOW);
       if(typeof d!=="object")throw 0;
       ["races","spells","feats","bgs","weapons","armors","shields"].forEach(k=>{if(!Array.isArray(HB[k]))HB[k]=[];(d[k]||[]).forEach(item=>{
         if(item&&item.n&&!HB[k].some(x=>x.n===item.n))HB[k].push(item)})});
@@ -2102,7 +2130,8 @@ function partyStats(data){const saved=C;C=data;
     const pas=sk=>10+mod(f[SKILLS[sk]])+(skP.has(sk)?(exp.has(sk)?2*pb2:pb2):0);
     const ce=casterEntries()[0],ci=ce?casterInfoFor(ce):null;
     return{name:C.name||"—",race:rN(C.race),cls:entries().map(e=>`${cN(e.n)} ${e.lv}`).join("/"),
-      ac:acOf(f),hpM:hpOf(f),hpC:(C.play&&C.play.hp!=null)?C.play.hp:null,
+      ac:acOf(f),hpM:hpOf(f),hpC:(C.play&&C.play.hp!=null)?C.play.hp:null,lv:totLevel(),
+      thp:(C.play&&C.play.thp)||0,cond:(C.play&&Array.isArray(C.play.cond))?C.play.cond.slice():[],
       pp:pas("Perception"),pins:pas("Insight"),pinv:pas("Investigation"),
       spd:speedOf(),init:fm(mod(f.dex)),dv:dvOf(),
       dc:ci?8+pb2+mod(f[ci.abil]):null,
@@ -2483,6 +2512,7 @@ function renderStep(){nav();const b=$("wizardBody");
   else if(step===3)b.innerHTML=stBg();
   else if(step===4)b.innerHTML=stSpells();
   else b.innerHTML=stDetails();
+  if(step===1&&typeof lvupBanner==="function")b.insertAdjacentHTML("afterbegin",lvupBanner());
   if(_wizStep!==step){window.scrollTo(0,0);_wizStep=step}
   else requestAnimationFrame(()=>window.scrollTo(0,_sy));
   autosave();
@@ -3068,29 +3098,51 @@ function hpOf(f){const cm=mod(f.con);let hp=0;
       if(i===0)hp+=hd+cm+(e.lv-1)*(Math.floor(hd/2)+1+cm);
       else hp+=e.lv*(Math.floor(hd/2)+1+cm)});
   }
-  if(C.sub==="Hill Dwarf")hp+=totLevel();return Math.max(1,hp)}
+  if(C.sub==="Hill Dwarf")hp+=totLevel();
+  /* Robusto (Tough): +2 pf per livello del personaggio */
+  if(chosenFeats().includes("Tough"))hp+=2*totLevel();
+  /* Resilienza Draconica: +1 pf per livello da Stregone (Discendenza Draconica) */
+  entries().forEach(e=>{if(e.n==="Sorcerer"&&e.sub==="Draconic Bloodline")hp+=e.lv});
+  return Math.max(1,hp)}
 function gear(){
   if(!C.gear){const d=DEF_GEAR[C.cls]||{armor:"Leather",shield:false,weapons:["Dagger"]};
     C.gear={armor:d.armor,shield:d.shield,weapons:d.weapons.slice(),inv:""}}
   if(!Array.isArray(C.gear.weapons))C.gear.weapons=[];
   return C.gear}
 function armorObj(){return ARMORS.find(a=>a[0]===gear().armor)||ARMORS[0]}
-function acOf(f){const g=gear(),a=armorObj(),dx=mod(f.dex);let ac;
-  if(a[2]==="none"){
-    if(C.cls==="Barbarian")ac=10+dx+mod(f.con);
-    else if(C.cls==="Monk"&&!g.shield)ac=10+dx+mod(f.wis);
-    else ac=10+dx;
-  }else if(a[2]==="light")ac=a[3]+dx;
+/* Armatura Naturale razziale: legge il tratto "Natural Armor (CA 13+Dex)" / "(12+Con)" (anche homebrew) */
+function naturalArmor(f){const r=raceObj(),s=subObj();
+  const tr=[...((r&&r.traits)||[]),...((s&&s.traits)||[])];
+  for(const t of tr){const m=/^Natural Armor \((?:CA )?(\d+)\s*\+\s*(Dex|Des|Con|Cos)\)/i.exec(t);
+    if(m){const ab=/^(dex|des)$/i.test(m[2])?"dex":"con";return{base:+m[1],ab,ac:+m[1]+mod(f[ab])}}}
+  return null}
+function hasRaceTrait(prefix){const r=raceObj(),s=subObj();
+  return[...((r&&r.traits)||[]),...((s&&s.traits)||[])].some(t=>t.startsWith(prefix))}
+/* tutte le CA "senza armatura" disponibili: si usa la migliore (non si cumulano) */
+function unarmoredOpts(f){const g=gear(),dx=mod(f.dex),ens=entries(),out=[{ac:10+dx,lbl:""}];
+  if(ens.some(e=>e.n==="Barbarian"))out.push({ac:10+dx+mod(f.con),lbl:"Difesa senza Armatura (Barbaro)"});
+  if(ens.some(e=>e.n==="Monk")&&!g.shield)out.push({ac:10+dx+mod(f.wis),lbl:"Difesa senza Armatura (Monaco)"});
+  if(ens.some(e=>e.n==="Sorcerer"&&e.sub==="Draconic Bloodline"))out.push({ac:13+dx,lbl:"Resilienza Draconica"});
+  const na=naturalArmor(f);if(na)out.push({ac:na.ac,lbl:`Armatura Naturale (${na.base}+${na.ab==="dex"?"Des":"Cos"})`});
+  return out}
+function bestUnarmored(f){return unarmoredOpts(f).reduce((b,o)=>o.ac>b.ac?o:b)}
+function acOf(f){const a=armorObj(),dx=mod(f.dex);let ac;
+  if(a[2]==="none")ac=bestUnarmored(f).ac;
+  else if(a[2]==="light")ac=a[3]+dx;
   else if(a[2]==="med")ac=a[3]+Math.min(dx,a[4]);
   else ac=a[3];
   ac+=shieldBonus();
+  /* Forgiato: Protezione Integrata +1 CA */
+  if(hasRaceTrait("Integrated Protection"))ac+=1;
   return ac}
 function acNote(){const g=gear(),a=armorObj(),f=finalScores();
   const sh=shieldOf(g.shield);
   let n=(LANG==="it"?a[1]:a[0])+(sh?" + "+(LANG==="it"?sh[1]:sh[0])+(sh[2]!==2?" (+"+sh[2]+")":""):"");
   if(a[7]==="HB"&&a[8])n+=" · "+a[8];
   if(sh&&sh[4]==="HB"&&sh[3])n+=" · "+sh[3];
-  if(a[2]==="none"&&(C.cls==="Sorcerer"||C.cls==="Wizard"))n+=" (13+Des con Armatura Magica)";
+  if(a[2]==="none"){const bu=bestUnarmored(f);if(bu.lbl)n+=" · "+bu.lbl;
+    else if(entries().some(e=>e.n==="Sorcerer"||e.n==="Wizard"))n+=" (13+Des con Armatura Magica)"}
+  if(hasRaceTrait("Integrated Protection"))n+=" · Protezione Integrata (+1)";
   if(a[5]>0&&f.str<a[5])n+=` ⚠ For ${a[5]} richiesta (-3 m velocità)`;
   return n}
 function featureList(){
@@ -3113,8 +3165,8 @@ function buildSheet(){
   const f=finalScores(),c=clsObj(),r=raceObj(),s=subObj(),bg=bgObj(),pb=prof(totLevel());
   const skProf=new Set([...bgSkillList(),...C.skills]);
   const clsTxt=entries().map(e=>`${cN(e.n)} ${e.lv}${e.sub?" ("+scN(e.sub)+")":""}`).join(" / ");
-  let h=`<div class="sh-head"><div><div class="pname">${C.name||"—"}</div><div>${rN(C.race)}${C.sub?" ("+rN(C.sub)+")":""} · ${clsTxt} · Livello ${totLevel()}</div></div>
-  <div class="pmeta">Background: <b>${C.bg?bgN(C.bg):"—"}</b><br>Allineamento: <b>${C.align}</b><br>Giocatore: ${C.player||"—"} · Bonus competenza: <b>${fm(pb)}</b></div></div>`;
+  let h=`<div class="sh-head"><div><div class="pname">${htmlEsc(C.name)||"—"}</div><div>${rN(C.race)}${C.sub?" ("+rN(C.sub)+")":""} · ${clsTxt} · Livello ${totLevel()}</div></div>
+  <div class="pmeta">Background: <b>${C.bg?bgN(C.bg):"—"}</b><br>Allineamento: <b>${C.align}</b><br>Giocatore: ${htmlEsc(C.player)||"—"} · Bonus competenza: <b>${fm(pb)}</b></div></div>`;
   h+=`<div class="sh-cols"><div class="sh-abil">`;
   ABILS.forEach(a=>{h+=`<div class="box"><div class="nm">${ABIL_IT[a]}</div><div class="md">${fm(mod(f[a]))}</div><div class="sc">${f[a]}</div></div>`});
   h+=`</div><div>`;
@@ -3185,7 +3237,7 @@ function buildSheet(){
   h+=`<div class="sh-box"><h3>Competenze ed equipaggiamento</h3><div class="sh-trait"><b>Competenza armature:</b> ${c.armor}</div><div class="sh-trait"><b>Competenza armi:</b> ${c.weapons}</div>${bg?`<div class="sh-trait"><b>Background (${bg.src}):</b> ${bg.x}</div>`:""}
   <div class="sh-trait"><b>Armatura indossata:</b> ${LANG==="it"?armorObj()[1]:armorObj()[0]}${shieldOf(gear().shield)?" + "+(LANG==="it"?shieldOf(gear().shield)[1]:shieldOf(gear().shield)[0]):""}</div>
   <div class="sh-trait"><b>Armi:</b> ${gear().weapons.map(wn=>{const w=WEAPONS.find(x=>x[0]===wn);return w?(LANG==="it"?w[1]:w[0]):wn}).join(", ")||"—"}</div>
-  ${gear().inv?`<div class="sh-trait"><b>Inventario:</b> ${gear().inv}</div>`:""}
+  ${gear().inv?`<div class="sh-trait"><b>Inventario:</b> ${htmlEsc(gear().inv)}</div>`:""}
   <div class="sh-trait"><b>Dotazione di classe suggerita:</b> ${eqN(c.equip)}</div>${isMulti()?`<div class="sh-trait"><b>Multiclasse:</b> TS e abilità dalla classe primaria (${cN(C.cls)}); dalla classe aggiuntiva si ottengono solo le competenze previste dal PHB (cap. 6, "Multiclassing").</div>`:""}</div>`;
   h+=`<div class="sh-box"><h3>Personalità</h3>
    <div class="sh-trait"><b>Tratto:</b> ${C.trait||"—"}</div><div class="sh-trait"><b>Ideale:</b> ${C.ideal||"—"}</div>
@@ -3270,9 +3322,9 @@ function renderGrim(){
     ${open&&det?`<div class="sdesc">${det[1]}</div>`:""}
    </div>`}).join("")||'<p style="color:var(--muted)">Nessun incantesimo trovato con questi filtri.</p>';
 }
-const SUITE_KEYS=["dnd5e_chars","dnd5e_draft","dnd5e_lang","dnd5e_npcs","enc_src","enc_saved","enc_trk","enc_hb","dnd5e_diary","dnd5e_puzzles"];
+const SUITE_KEYS=["dnd5e_chars","dnd5e_draft","dnd5e_lang","dnd5e_homebrew","dnd5e_npcs","enc_src","enc_saved","enc_trk","enc_hb","dnd5e_diary","dnd5e_puzzles"];
 function backupSuite(){
-  const data={type:"dnd5e_suite_backup",date:new Date().toISOString(),store:{}};
+  const data={type:"dnd5e_suite_backup",ver:2,date:new Date().toISOString(),store:{}};
   let n=0;SUITE_KEYS.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null){data.store[k]=v;n++}}catch(e){}});
   if(!n){alert("Nulla da salvare.");return}
   const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
@@ -3283,19 +3335,49 @@ function restoreSuite(file){
   const rd=new FileReader();
   rd.onload=()=>{try{
     const d=JSON.parse(rd.result);
-    if(d.type!=="dnd5e_suite_backup"||!d.store)throw 0;
-    if(!confirm("Ripristinare il backup? I dati attuali di questo browser verranno sovrascritti."))return;
-    for(const k in d.store)localStorage.setItem(k,d.store[k]);
+    if(d.type!=="dnd5e_suite_backup"||!d.store||typeof d.store!=="object")throw 0;
+    const keys=Object.keys(d.store).filter(k=>SUITE_KEYS.includes(k)&&typeof d.store[k]==="string");
+    if(!keys.length)throw 0;
+    if(!confirm("Ripristinare il backup? Tutti i dati della suite in questo browser verranno sostituiti da quelli del file."))return;
+    /* sostituzione completa: le chiavi della suite assenti nel backup vengono rimosse, così non restano dati misti */
+    SUITE_KEYS.forEach(k=>{try{if(keys.includes(k))localStorage.setItem(k,safeStoreVal(k,d.store[k]));else localStorage.removeItem(k)}catch(e){}});
     alert("✅ Backup ripristinato. La pagina verrà ricaricata.");location.reload();
   }catch(err){alert("File di backup non valido.")}};
   rd.readAsText(file);
 }
 applyHB();
 srcBadge();
+/* ================= INTEGRAZIONE SUITE ================= */
+/* statistiche pronte (CA, PF, livello…) salvate accanto a ogni PG: le leggono tracker e diario,
+   che non contengono le regole di calcolo. Ricalcolate a ogni apertura del tool. */
+function refreshRosterStats(){const list=roster();if(!list.length)return;
+  list.forEach(it=>{if(it&&it.data)it.st=partyStats(it.data)});lsSet("dnd5e_chars",list)}
+refreshRosterStats();
+/* il tracker può aggiornare PF, PF temporanei, condizioni e TS contro morte dei PG (con conferma del DM):
+   se quel PG è aperto qui, lo stato di gioco viene allineato senza toccare le altre modifiche */
+function pullPlaySync(){if(!C||!C.id)return false;
+  const it=roster().find(x=>x.id===C.id);
+  if(!it||!it.syncTs||it.syncTs<=(C._syncTs||0)||!it.data||!it.data.play)return false;
+  const p=play(),q=it.data.play;["hp","thp","cond","dsS","dsF"].forEach(k=>{if(q[k]!==undefined)p[k]=Array.isArray(q[k])?q[k].slice():q[k]});
+  C._syncTs=it.syncTs;autosave();return true}
+window.addEventListener("storage",e=>{if(e.key!=="dnd5e_chars")return;
+  if(pullPlaySync()&&$("sheetWrap").style.display==="block"){buildSheet();dlog("🔄 Stato aggiornato dal tracker di combattimento")}});
+/* "Sali di livello" dal diario: #lvup=<id> apre il PG nel wizard, al passo classe/livello */
+let LVUP=null;
+function lvupBanner(){if(!LVUP||!C||C.id!==LVUP.id)return"";
+  return`<div style="background:linear-gradient(160deg,#3d2f1b,#2e2312);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;margin-bottom:12px;color:var(--gold-l)">⬆ <b>${htmlEsc(C.name||"")}</b> può salire al <b>livello ${LVUP.to}</b> (segnalato dal Diario di Campagna).
+   <span style="color:var(--muted);font-size:.85rem">Aumenta il livello qui sotto (o aggiungi una classe), completa le scelte e alla fine premi <b>💾 Salva</b>.</span></div>`}
+function checkLvupHash(){const m=/^#lvup=([\w-]+)(?:&to=(\d+))?/.exec(location.hash);if(!m)return;
+  history.replaceState(null,"",location.pathname+location.search);
+  const it=roster().find(x=>x.id===m[1]);if(!it){alert("Personaggio non trovato tra quelli salvati in questo browser.");return}
+  loadChar(it.id);LVUP={id:it.id,from:totLevel(),to:parseInt(m[2],10)||totLevel()+1};
+  startWizard(true);step=1;renderStep()}
 (function(){const b=$("langBadge");if(b)b.textContent=LANG.toUpperCase()})();
 (function(){const dr=lsGet("dnd5e_draft",null);
   if(dr&&typeof dr==="object"&&(dr.race||dr.cls)){C=dr;
-    const rb=$("resumeBtn");if(rb){rb.style.display="";rb.textContent="▶ Riprendi: "+(dr.name||rN(dr.race||"")||"bozza")}}})();
+    const rb=$("resumeBtn");if(rb){rb.style.display="";rb.textContent="▶ Riprendi: "+(dr.name||rN(dr.race||"")||"bozza")}
+    pullPlaySync()}})();
+checkLvupHash();
 
 </script>
 </body>
